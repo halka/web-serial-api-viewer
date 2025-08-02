@@ -231,7 +231,7 @@ export default function SerialMonitor() {
 
           // 受信したデータをそのまま表示（日本語文字も含む）
           if (text) {
-            const newLine = `${text}\n\n`
+            const newLine = `${text}\n`
 
             // 新しいデータを文字列の先頭に追加
             setReceivedData((prev) => newLine + prev)
