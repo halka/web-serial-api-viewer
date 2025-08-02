@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -19,7 +19,7 @@ interface ReceivedData {
 export default function SerialMonitor() {
   const [port, setPort] = useState<SerialPort | null>(null)
   const [isConnected, setIsConnected] = useState(false)
-  const [baudRate, setBaudRate] = useState("9600")
+  const [baudRate, setBaudRate] = useState("115200")
   const [receivedData, setReceivedData] = useState<ReceivedData[]>([])
   const [isSupported, setIsSupported] = useState(false)
   const [permissionError, setPermissionError] = useState<string | null>(null)
