@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Trash2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle } from "lucide-react"
+import { Trash2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle, ArrowDown, Pause } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function SerialMonitor() {
@@ -18,8 +18,10 @@ export default function SerialMonitor() {
   const [permissionError, setPermissionError] = useState<string | null>(null)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [isConnecting, setIsConnecting] = useState(false)
+  const [autoScroll, setAutoScroll] = useState(true)
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [demoMode, setDemoMode] = useState(false)
   const [demoInterval, setDemoInterval] = useState<NodeJS.Timeout | null>(null)
 
@@ -31,8 +33,30 @@ export default function SerialMonitor() {
     soundEnabledRef.current = soundEnabled
   }, [soundEnabled])
 
+  // 自動スクロール機能
+  const scrollToBottom = useCallback(() => {
+    if (autoScroll && scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight
+      }
+    }
+  }, [autoScroll])
+
+  // データが更新されたときに自動スクロール
+  useEffect(() => {
+    if (receivedData) {
+      // 少し遅延させてDOMの更新を待つ
+      setTimeout(scrollToBottom, 10)
+    }
+  }, [receivedData, scrollToBottom])
+
   const clearData = () => {
     setReceivedData("")
+  }
+
+  const toggleAutoScroll = () => {
+    setAutoScroll(!autoScroll)
   }
 
   useEffect(() => {
@@ -137,8 +161,8 @@ export default function SerialMonitor() {
         const randomData = sampleData[Math.floor(Math.random() * sampleData.length)]
         const newLine = `${randomData}\n\n`
 
-        // 新しいデータを文字列の先頭に追加
-        setReceivedData((prev) => newLine + prev)
+        // 新しいデータを文字列の末尾に追加
+        setReceivedData((prev) => prev + newLine)
         playReceiveSound()
       },
       2000 + Math.random() * 3000,
@@ -231,10 +255,8 @@ export default function SerialMonitor() {
 
           // 受信したデータをそのまま表示（日本語文字も含む）
           if (text) {
-            const newLine = `${text}\n`
-
-            // 新しいデータを文字列の先頭に追加
-            setReceivedData((prev) => newLine + prev)
+            // 新しいデータを文字列の末尾に追加
+            setReceivedData((prev) => prev + text)
             playReceiveSound()
           }
         }
@@ -260,8 +282,7 @@ export default function SerialMonitor() {
       try {
         const finalText = decoder.decode()
         if (finalText) {
-          const newLine = `${finalText}\n\n`
-          setReceivedData((prev) => newLine + prev)
+          setReceivedData((prev) => prev + finalText)
         }
       } catch (finalError) {
         console.log("最終デコードエラー:", finalError)
@@ -390,6 +411,19 @@ export default function SerialMonitor() {
               )}
             </Button>
 
+            <Button
+              onClick={toggleAutoScroll}
+              variant="outline"
+              size="sm"
+              title={autoScroll ? "自動スクロールを停止" : "自動スクロールを開始"}
+            >
+              {autoScroll ? (
+                <ArrowDown className="h-4 w-4 text-blue-500" />
+              ) : (
+                <Pause className="h-4 w-4 text-gray-400" />
+              )}
+            </Button>
+
             <Badge
               variant={isConnected ? (demoMode ? "secondary" : "default") : "secondary"}
               className={isConnected && !demoMode ? "bg-green-500 text-white hover:bg-green-600" : ""}
@@ -406,14 +440,23 @@ export default function SerialMonitor() {
             <div>
               <CardTitle>受信データ</CardTitle>
             </div>
-            <Button onClick={clearData} variant="outline" size="sm" disabled={receivedData.length === 0}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              クリア
-            </Button>
+            <div className="flex gap-2">
+              <Badge variant={autoScroll ? "default" : "secondary"}>
+                {autoScroll ? "自動スクロール: ON" : "自動スクロール: OFF"}
+              </Badge>
+              <Button onClick={clearData} variant="outline" size="sm" disabled={receivedData.length === 0}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                クリア
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="w-full border rounded-md p-4" style={{ height: "calc(100vh - 320px)" }}>
+          <ScrollArea
+            ref={scrollAreaRef}
+            className="w-full border rounded-md p-4"
+            style={{ height: "calc(100vh - 320px)" }}
+          >
             {receivedData.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 {isConnected ? "データを待機中..." : "シリアルポートに接続してください"}
