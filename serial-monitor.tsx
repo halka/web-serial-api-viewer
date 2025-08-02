@@ -108,6 +108,11 @@ export default function SerialMonitor() {
           "Motion detected",
           "Battery: 85%",
           "Signal strength: -45 dBm",
+          "GPS Data:\nLat: 35.6762\nLon: 139.6503\nAlt: 40m",
+          "Sensor Status:\n- Temperature: OK\n- Humidity: OK\n- Pressure: FAIL",
+          "Multi-line log:\nINFO: System started\nWARN: Low battery\nERROR: Sensor disconnected",
+          'JSON Data:\n{\n  "temp": 25.3,\n  "humidity": 60,\n  "status": "ok"\n}',
+          "Command Response:\n> status\nSystem: Running\nUptime: 1d 5h 23m\n> ",
         ]
 
         const randomData = sampleData[Math.floor(Math.random() * sampleData.length)]
@@ -117,7 +122,8 @@ export default function SerialMonitor() {
           timestamp: new Date(),
         }
 
-        setReceivedData((prev) => [...prev, newData])
+        // 新しいデータを配列の先頭に追加
+        setReceivedData((prev) => [newData, ...prev])
         playReceiveSound()
       },
       2000 + Math.random() * 3000,
@@ -185,7 +191,6 @@ export default function SerialMonitor() {
 
     readerRef.current = reader
     const decoder = new TextDecoder()
-    let buffer = ""
 
     try {
       while (true) {
@@ -193,23 +198,18 @@ export default function SerialMonitor() {
         if (done) break
 
         const text = decoder.decode(value, { stream: true })
-        buffer += text
 
-        // 改行文字で分割してデータを処理
-        const lines = buffer.split(/\r\n|\r|\n/)
-        buffer = lines.pop() || "" // 最後の不完全な行をバッファに保持
-
-        for (const line of lines) {
-          if (line.trim()) {
-            const newData: ReceivedData = {
-              id: Date.now() + Math.random(),
-              data: line.trim(),
-              timestamp: new Date(),
-            }
-
-            setReceivedData((prev) => [...prev, newData])
-            playReceiveSound()
+        // 受信したデータをそのまま表示（改行文字での分割なし）
+        if (text) {
+          const newData: ReceivedData = {
+            id: Date.now() + Math.random(),
+            data: text,
+            timestamp: new Date(),
           }
+
+          // 新しいデータを配列の先頭に追加
+          setReceivedData((prev) => [newData, ...prev])
+          playReceiveSound()
         }
       }
     } catch (error) {
@@ -277,7 +277,7 @@ export default function SerialMonitor() {
 
   if (!isSupported) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>ブラウザサポートエラー</AlertTitle>
@@ -296,7 +296,7 @@ export default function SerialMonitor() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       {permissionError && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
@@ -365,7 +365,9 @@ export default function SerialMonitor() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>受信データ</CardTitle>
-              <CardDescription>受信したデータが時系列で表示されます（{receivedData.length}件）</CardDescription>
+              <CardDescription>
+                受信したデータが時系列で表示されます（{receivedData.length}件）- 新しいデータが上に表示されます
+              </CardDescription>
             </div>
             <Button onClick={clearData} variant="outline" size="sm" disabled={receivedData.length === 0}>
               <Trash2 className="h-4 w-4 mr-2" />
@@ -385,10 +387,10 @@ export default function SerialMonitor() {
                   <div key={item.id}>
                     <div className="flex items-start gap-3 p-2 rounded-md bg-muted/50">
                       <Badge variant="outline" className="text-xs font-mono">
-                        {index + 1}
+                        {receivedData.length - index}
                       </Badge>
                       <div className="flex-1 min-w-0">
-                        <div className="font-mono text-sm break-all">{item.data}</div>
+                        <div className="font-mono text-sm break-all whitespace-pre-wrap">{item.data}</div>
                         <div className="text-xs text-muted-foreground mt-1 space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">受信日時:</span>
