@@ -6,21 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { Trash2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-
-interface ReceivedData {
-  id: number
-  data: string
-  timestamp: Date
-}
 
 export default function SerialMonitor() {
   const [port, setPort] = useState<SerialPort | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [baudRate, setBaudRate] = useState("115200")
-  const [receivedData, setReceivedData] = useState<ReceivedData[]>([])
+  const [receivedData, setReceivedData] = useState<string>("")
   const [isSupported, setIsSupported] = useState(false)
   const [permissionError, setPermissionError] = useState<string | null>(null)
   const [soundEnabled, setSoundEnabled] = useState(true)
@@ -39,7 +32,7 @@ export default function SerialMonitor() {
   }, [soundEnabled])
 
   const clearData = () => {
-    setReceivedData([])
+    setReceivedData("")
   }
 
   useEffect(() => {
@@ -142,14 +135,10 @@ export default function SerialMonitor() {
         ]
 
         const randomData = sampleData[Math.floor(Math.random() * sampleData.length)]
-        const newData: ReceivedData = {
-          id: Date.now() + Math.random(),
-          data: randomData,
-          timestamp: new Date(),
-        }
+        const newLine = `${randomData}\n\n`
 
-        // 新しいデータを配列の先頭に追加
-        setReceivedData((prev) => [newData, ...prev])
+        // 新しいデータを文字列の先頭に追加
+        setReceivedData((prev) => newLine + prev)
         playReceiveSound()
       },
       2000 + Math.random() * 3000,
@@ -242,14 +231,10 @@ export default function SerialMonitor() {
 
           // 受信したデータをそのまま表示（日本語文字も含む）
           if (text) {
-            const newData: ReceivedData = {
-              id: Date.now() + Math.random(),
-              data: text,
-              timestamp: new Date(),
-            }
+            const newLine = `${text}\n\n`
 
-            // 新しいデータを配列の先頭に追加
-            setReceivedData((prev) => [newData, ...prev])
+            // 新しいデータを文字列の先頭に追加
+            setReceivedData((prev) => newLine + prev)
             playReceiveSound()
           }
         }
@@ -275,12 +260,8 @@ export default function SerialMonitor() {
       try {
         const finalText = decoder.decode()
         if (finalText) {
-          const newData: ReceivedData = {
-            id: Date.now() + Math.random(),
-            data: finalText,
-            timestamp: new Date(),
-          }
-          setReceivedData((prev) => [newData, ...prev])
+          const newLine = `${finalText}\n\n`
+          setReceivedData((prev) => newLine + prev)
         }
       } catch (finalError) {
         console.log("最終デコードエラー:", finalError)
@@ -321,31 +302,6 @@ export default function SerialMonitor() {
     const newSoundState = !soundEnabled
     console.log("サウンド切り替え:", soundEnabled, "→", newSoundState)
     setSoundEnabled(newSoundState)
-  }
-
-  // 時刻フォーマット（日本語ロケール）
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("ja-JP", {
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      fractionalSecondDigits: 3,
-    })
-  }
-
-  // 日付フォーマット（日本語ロケール）
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("ja-JP", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })
-  }
-
-  // 日付と時刻を組み合わせたフォーマット
-  const formatDateTime = (date: Date) => {
-    return `${formatDate(date)} ${formatTime(date)}`
   }
 
   if (!isSupported) {
@@ -448,7 +404,7 @@ export default function SerialMonitor() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>受信データ（{receivedData.length}件）</CardTitle>
+              <CardTitle>受信データ</CardTitle>
             </div>
             <Button onClick={clearData} variant="outline" size="sm" disabled={receivedData.length === 0}>
               <Trash2 className="h-4 w-4 mr-2" />
@@ -463,26 +419,7 @@ export default function SerialMonitor() {
                 {isConnected ? "データを待機中..." : "シリアルポートに接続してください"}
               </div>
             ) : (
-              <div className="space-y-4">
-                {receivedData.map((item, index) => (
-                  <div key={item.id}>
-                    <div className="flex items-start gap-3 p-2 rounded-md bg-muted/50">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-mono text-sm break-all whitespace-pre-wrap leading-relaxed">
-                          {item.data}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">受信日時:</span>
-                            <span>{formatDateTime(item.timestamp)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {index < receivedData.length - 1 && <Separator className="my-1" />}
-                  </div>
-                ))}
-              </div>
+              <div className="font-mono text-sm break-all whitespace-pre-wrap leading-relaxed">{receivedData}</div>
             )}
           </ScrollArea>
         </CardContent>
