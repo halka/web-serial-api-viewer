@@ -311,7 +311,6 @@ export default function SerialMonitor() {
             {isConnected ? <Wifi className="h-5 w-5 text-green-500" /> : <WifiOff className="h-5 w-5 text-gray-500" />}
             シリアルモニター
           </CardTitle>
-          <CardDescription>シリアルポートからデータを受信して表示します</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4 flex-wrap">
@@ -364,10 +363,7 @@ export default function SerialMonitor() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>受信データ</CardTitle>
-              <CardDescription>
-                受信したデータが時系列で表示されます（{receivedData.length}件）- 新しいデータが上に表示されます
-              </CardDescription>
+              <CardTitle>受信データ（{receivedData.length}件）</CardTitle>
             </div>
             <Button onClick={clearData} variant="outline" size="sm" disabled={receivedData.length === 0}>
               <Trash2 className="h-4 w-4 mr-2" />
@@ -382,13 +378,10 @@ export default function SerialMonitor() {
                 {isConnected ? "データを待機中..." : "シリアルポートに接続してください"}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {receivedData.map((item, index) => (
                   <div key={item.id}>
                     <div className="flex items-start gap-3 p-2 rounded-md bg-muted/50">
-                      <Badge variant="outline" className="text-xs font-mono">
-                        {receivedData.length - index}
-                      </Badge>
                       <div className="flex-1 min-w-0">
                         <div className="font-mono text-sm break-all whitespace-pre-wrap">{item.data}</div>
                         <div className="text-xs text-muted-foreground mt-1 space-y-1">
