@@ -1,17 +1,17 @@
 # Serial Port Monitor
 
-A web-based serial port monitor built with Next.js and the Web Serial API. Features dark mode support and Japanese character handling.
+A web-based serial port monitor built with Next.js and the Web Serial API.
 
 ## Features
 
-- Connect to serial ports via Web Serial API
-- Real-time data monitoring with auto-scroll
-- Dark/Light mode toggle
-- Sound notifications for received data
+- Connect to serial devices via Web Serial API
+- Real-time data monitoring with green terminal-style display
+- Dark/Light mode support
+- Configurable baud rates (300 to 2,000,000 bps) with custom input
+- Auto-scroll functionality
+- Audio notifications for received data
 - Demo mode for testing
-- Support for Japanese and multi-byte characters
-- Customizable baud rates
-- Export functionality
+- Japanese character support (UTF-8)
 
 ## Browser Support
 
@@ -19,24 +19,25 @@ A web-based serial port monitor built with Next.js and the Web Serial API. Featu
 - Edge 89+
 - Opera 75+
 
-## Requirements
+Requires HTTPS connection or localhost for Web Serial API access.
 
-- HTTPS connection or localhost
-- Modern browser with Web Serial API support
+## Development
 
-## Getting Started
-
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Run development server: `npm run dev`
-4. Open [http://localhost:3000](http://localhost:3000)
+\`\`\`bash
+npm install
+npm run dev
+\`\`\`
 
 ## Deployment
 
 This project is configured for static export and can be deployed to:
-- Vercel
-- Netlify
 - Cloudflare Pages
+- Vercel
 - GitHub Pages
+- Any static hosting service
 
-Run `npm run build` to create a production build.
+\`\`\`bash
+npm run build
+\`\`\`
+
+The built files will be in the `out` directory.

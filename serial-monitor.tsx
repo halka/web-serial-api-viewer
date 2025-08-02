@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Trash2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle, ArrowDown, Pause, Moon, Sun } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useTheme } from "next-themes"
@@ -248,7 +249,7 @@ export default function SerialMonitor() {
 
       if (error.message.includes("permissions policy") || error.message.includes("disallowed by permissions policy")) {
         setPermissionError(
-          "Web Serial API is restricted in preview environment. To use this feature, please download the code and deploy to local environment or Vercel.",
+          "Web Serial API is restricted in preview environment. To use this feature, please download the code and deploy to local environment or Cloudflare Pages.",
         )
       } else if (error.message.includes("No port selected")) {
         setPermissionError("No port was selected.")
@@ -404,9 +405,9 @@ export default function SerialMonitor() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <label htmlFor="baudrate" className="text-sm font-medium">
+              <Label htmlFor="baudrate" className="text-sm font-medium">
                 Baud Rate:
-              </label>
+              </Label>
               {!isCustomBaudRate ? (
                 <Select value={baudRate} onValueChange={handleBaudRateChange} disabled={isConnected}>
                   <SelectTrigger className="w-32">
