@@ -6,13 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Trash2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle, ArrowDown, Pause } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Trash2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle, ArrowDown, Pause, Moon, Sun } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useTheme } from "next-themes"
 
 export default function SerialMonitor() {
   const [port, setPort] = useState<SerialPort | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [baudRate, setBaudRate] = useState("115200")
+  const [customBaudRate, setCustomBaudRate] = useState("")
+  const [isCustomBaudRate, setIsCustomBaudRate] = useState(false)
   const [receivedData, setReceivedData] = useState<string>("")
   const [isSupported, setIsSupported] = useState(false)
   const [permissionError, setPermissionError] = useState<string | null>(null)
@@ -24,6 +28,7 @@ export default function SerialMonitor() {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [demoMode, setDemoMode] = useState(false)
   const [demoInterval, setDemoInterval] = useState<NodeJS.Timeout | null>(null)
+  const { theme, setTheme } = useTheme()
 
   // soundEnabledの最新の値を参照するためのref
   const soundEnabledRef = useRef(soundEnabled)
@@ -57,6 +62,33 @@ export default function SerialMonitor() {
 
   const toggleAutoScroll = () => {
     setAutoScroll(!autoScroll)
+  }
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
+
+  const handleBaudRateChange = (value: string) => {
+    if (value === "custom") {
+      setIsCustomBaudRate(true)
+      setBaudRate(customBaudRate || "9600")
+    } else {
+      setIsCustomBaudRate(false)
+      setBaudRate(value)
+    }
+  }
+
+  const handleCustomBaudRateChange = (value: string) => {
+    // 数字のみを許可
+    const numericValue = value.replace(/[^0-9]/g, "")
+    setCustomBaudRate(numericValue)
+    if (isCustomBaudRate) {
+      setBaudRate(numericValue)
+    }
+  }
+
+  const getEffectiveBaudRate = () => {
+    return isCustomBaudRate ? customBaudRate : baudRate
   }
 
   useEffect(() => {
@@ -141,21 +173,21 @@ export default function SerialMonitor() {
     const interval = setInterval(
       () => {
         const sampleData = [
-          "温度: 23.5°C",
-          "湿度: 65%",
-          "気圧: 1013.25 hPa",
-          "照度: 450 lux",
-          "動作検知",
-          "バッテリー: 85%",
-          "信号強度: -45 dBm",
-          "GPS データ:\n緯度: 35.6762\n経度: 139.6503\n高度: 40m",
-          "センサー状態:\n- 温度: 正常\n- 湿度: 正常\n- 気圧: エラー",
-          "マルチライン ログ:\n情報: システム開始\n警告: バッテリー低下\nエラー: センサー切断",
-          'JSON データ:\n{\n  "温度": 25.3,\n  "湿度": 60,\n  "状態": "正常"\n}',
-          "コマンド応答:\n> ステータス\nシステム: 動作中\n稼働時間: 1日 5時間 23分\n> ",
-          "日本語テスト: こんにちは世界！\n漢字、ひらがな、カタカナ、英数字123",
-          "マルチバイト文字テスト:\n🌡️ 温度センサー\n💧 湿度センサー\n🔋 バッテリー状態",
-          "エラーメッセージ:\nエラーコード: E001\n詳細: 通信タイムアウトが発生しました\n対処法: デバイスを再接続してください",
+          "Temperature: 23.5°C",
+          "Humidity: 65%",
+          "Pressure: 1013.25 hPa",
+          "Light: 450 lux",
+          "Motion detected",
+          "Battery: 85%",
+          "Signal strength: -45 dBm",
+          "GPS Data:\nLatitude: 35.6762\nLongitude: 139.6503\nAltitude: 40m",
+          "Sensor Status:\n- Temperature: OK\n- Humidity: OK\n- Pressure: ERROR",
+          "Multi-line Log:\nINFO: System started\nWARN: Low battery\nERROR: Sensor disconnected",
+          'JSON Data:\n{\n  "temperature": 25.3,\n  "humidity": 60,\n  "status": "normal"\n}',
+          "Command Response:\n> status\nSystem: Running\nUptime: 1d 5h 23m\n> ",
+          "Japanese Test: こんにちは世界！\nKanji, Hiragana, Katakana, ABC123",
+          "Multi-byte Test:\n🌡️ Temperature Sensor\n💧 Humidity Sensor\n🔋 Battery Status",
+          "Error Message:\nError Code: E001\nDetails: Communication timeout occurred\nSolution: Please reconnect the device",
         ]
 
         const randomData = sampleData[Math.floor(Math.random() * sampleData.length)]
@@ -188,12 +220,19 @@ export default function SerialMonitor() {
     try {
       // Web Serial APIの利用可能性を再チェック
       if (!("serial" in navigator)) {
-        throw new Error("このブラウザはWeb Serial APIをサポートしていません")
+        throw new Error("This browser does not support Web Serial API")
+      }
+
+      const effectiveBaudRate = getEffectiveBaudRate()
+      const baudRateNumber = Number.parseInt(effectiveBaudRate)
+
+      if (isNaN(baudRateNumber) || baudRateNumber <= 0) {
+        throw new Error("Invalid baud rate. Please enter a valid positive number.")
       }
 
       const selectedPort = await navigator.serial.requestPort()
       await selectedPort.open({
-        baudRate: Number.parseInt(baudRate),
+        baudRate: baudRateNumber,
         dataBits: 8,
         stopBits: 1,
         parity: "none",
@@ -205,18 +244,18 @@ export default function SerialMonitor() {
       // データ読み取りの開始
       startReading(selectedPort)
     } catch (error: any) {
-      console.error("シリアルポートの接続に失敗しました:", error)
+      console.error("Failed to connect to serial port:", error)
 
       if (error.message.includes("permissions policy") || error.message.includes("disallowed by permissions policy")) {
         setPermissionError(
-          "プレビュー環境ではWeb Serial APIが制限されています。この機能を使用するには、コードをダウンロードしてローカル環境またはVercelにデプロイしてください。",
+          "Web Serial API is restricted in preview environment. To use this feature, please download the code and deploy to local environment or Vercel.",
         )
       } else if (error.message.includes("No port selected")) {
-        setPermissionError("ポートが選択されませんでした。")
+        setPermissionError("No port was selected.")
       } else if (error.name === "NotAllowedError") {
-        setPermissionError("シリアルポートへのアクセスが拒否されました。ブラウザの設定を確認してください。")
+        setPermissionError("Access to serial port was denied. Please check your browser settings.")
       } else {
-        setPermissionError(`接続エラー: ${error.message}`)
+        setPermissionError(`Connection error: ${error.message}`)
       }
     } finally {
       setIsConnecting(false)
@@ -241,10 +280,10 @@ export default function SerialMonitor() {
 
         // ストリームが終了した場合の処理
         if (done) {
-          console.log("シリアルストリームが終了しました")
+          console.log("Serial stream ended")
           // 接続状態を更新
           setIsConnected(false)
-          setPermissionError("シリアルポートとの接続が切断されました。")
+          setPermissionError("Serial port connection was disconnected.")
           break
         }
 
@@ -262,17 +301,17 @@ export default function SerialMonitor() {
         }
       }
     } catch (error: any) {
-      console.error("データ読み取りエラー:", error)
+      console.error("Data reading error:", error)
 
       // エラーの種類に応じた処理
       if (error.name === "NetworkError") {
-        setPermissionError("ネットワークエラー: デバイスが切断された可能性があります。")
+        setPermissionError("Network error: Device may have been disconnected.")
       } else if (error.name === "InvalidStateError") {
-        setPermissionError("無効な状態: ポートが既に閉じられています。")
+        setPermissionError("Invalid state: Port is already closed.")
       } else if (error.name === "TypeError" && error.message.includes("decode")) {
-        setPermissionError("文字エンコーディングエラー: 受信データの文字コードを確認してください。")
+        setPermissionError("Character encoding error: Please check the character encoding of received data.")
       } else {
-        setPermissionError(`データ読み取り中にエラーが発生しました: ${error.message}`)
+        setPermissionError(`Error occurred while reading data: ${error.message}`)
       }
 
       // 接続状態を更新
@@ -285,7 +324,7 @@ export default function SerialMonitor() {
           setReceivedData((prev) => prev + finalText)
         }
       } catch (finalError) {
-        console.log("最終デコードエラー:", finalError)
+        console.log("Final decode error:", finalError)
       }
 
       // リーダーをクリア
@@ -314,14 +353,14 @@ export default function SerialMonitor() {
       setIsConnected(false)
       setPermissionError(null)
     } catch (error) {
-      console.error("切断エラー:", error)
+      console.error("Disconnect error:", error)
     }
   }
 
   // サウンドの切り替え
   const toggleSound = () => {
     const newSoundState = !soundEnabled
-    console.log("サウンド切り替え:", soundEnabled, "→", newSoundState)
+    console.log("Sound toggle:", soundEnabled, "→", newSoundState)
     setSoundEnabled(newSoundState)
   }
 
@@ -330,14 +369,14 @@ export default function SerialMonitor() {
       <div className="max-w-7xl mx-auto p-6">
         <Alert>
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>ブラウザサポートエラー</AlertTitle>
+          <AlertTitle>Browser Support Error</AlertTitle>
           <AlertDescription className="mt-2 space-y-2">
-            <p>このブラウザはWeb Serial APIをサポートしていません。</p>
+            <p>This browser does not support Web Serial API.</p>
             <p>
-              <strong>対応ブラウザ:</strong> Chrome 89+, Edge 89+, Opera 75+
+              <strong>Supported browsers:</strong> Chrome 89+, Edge 89+, Opera 75+
             </p>
             <p>
-              <strong>必要な条件:</strong> HTTPS接続またはlocalhost
+              <strong>Requirements:</strong> HTTPS connection or localhost
             </p>
           </AlertDescription>
         </Alert>
@@ -350,7 +389,7 @@ export default function SerialMonitor() {
       {permissionError && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>接続エラー</AlertTitle>
+          <AlertTitle>Connection Error</AlertTitle>
           <AlertDescription className="mt-2">{permissionError}</AlertDescription>
         </Alert>
       )}
@@ -359,38 +398,72 @@ export default function SerialMonitor() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {isConnected ? <Wifi className="h-5 w-5 text-green-500" /> : <WifiOff className="h-5 w-5 text-gray-500" />}
-            シリアルモニター
+            Serial Port Monitor
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <label htmlFor="baudrate" className="text-sm font-medium">
-                ボーレート:
+                Baud Rate:
               </label>
-              <Select value={baudRate} onValueChange={setBaudRate} disabled={isConnected}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="9600">9600</SelectItem>
-                  <SelectItem value="19200">19200</SelectItem>
-                  <SelectItem value="38400">38400</SelectItem>
-                  <SelectItem value="57600">57600</SelectItem>
-                  <SelectItem value="115200">115200</SelectItem>
-                  <SelectItem value="230400">230400</SelectItem>
-                  <SelectItem value="460800">460800</SelectItem>
-                  <SelectItem value="921600">921600</SelectItem>
-                </SelectContent>
-              </Select>
+              {!isCustomBaudRate ? (
+                <Select value={baudRate} onValueChange={handleBaudRateChange} disabled={isConnected}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="300">300</SelectItem>
+                    <SelectItem value="600">600</SelectItem>
+                    <SelectItem value="1200">1200</SelectItem>
+                    <SelectItem value="2400">2400</SelectItem>
+                    <SelectItem value="4800">4800</SelectItem>
+                    <SelectItem value="9600">9600</SelectItem>
+                    <SelectItem value="14400">14400</SelectItem>
+                    <SelectItem value="19200">19200</SelectItem>
+                    <SelectItem value="28800">28800</SelectItem>
+                    <SelectItem value="38400">38400</SelectItem>
+                    <SelectItem value="57600">57600</SelectItem>
+                    <SelectItem value="115200">115200</SelectItem>
+                    <SelectItem value="230400">230400</SelectItem>
+                    <SelectItem value="460800">460800</SelectItem>
+                    <SelectItem value="921600">921600</SelectItem>
+                    <SelectItem value="1000000">1000000</SelectItem>
+                    <SelectItem value="2000000">2000000</SelectItem>
+                    <SelectItem value="custom">Custom...</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    value={customBaudRate}
+                    onChange={(e) => handleCustomBaudRateChange(e.target.value)}
+                    placeholder="Enter baud rate"
+                    className="w-32"
+                    disabled={isConnected}
+                  />
+                  <Button
+                    onClick={() => {
+                      setIsCustomBaudRate(false)
+                      setBaudRate("115200")
+                    }}
+                    variant="outline"
+                    size="sm"
+                    disabled={isConnected}
+                  >
+                    Preset
+                  </Button>
+                </div>
+              )}
             </div>
 
             <Button
               onClick={isConnected ? disconnectFromSerial : connectToSerial}
               variant={isConnected && !demoMode ? "destructive" : "default"}
-              disabled={isConnecting}
+              disabled={isConnecting || (isCustomBaudRate && !customBaudRate)}
             >
-              {isConnecting ? "接続中..." : isConnected ? "切断" : "シリアルポート接続"}
+              {isConnecting ? "Connecting..." : isConnected ? "Disconnect" : "Connect Serial Port"}
             </Button>
 
             <Button
@@ -398,14 +471,14 @@ export default function SerialMonitor() {
               variant={demoMode ? "destructive" : "outline"}
               disabled={isConnected && !demoMode}
             >
-              {demoMode ? "デモ停止" : "デモモード"}
+              {demoMode ? "Stop Demo" : "Demo Mode"}
             </Button>
 
             <Button
               onClick={toggleSound}
               variant="outline"
               size="sm"
-              title={soundEnabled ? "音をミュート" : "音を有効化"}
+              title={soundEnabled ? "Mute sound" : "Enable sound"}
             >
               {soundEnabled ? (
                 <Volume2 className="h-4 w-4 text-blue-500" />
@@ -418,7 +491,7 @@ export default function SerialMonitor() {
               onClick={toggleAutoScroll}
               variant="outline"
               size="sm"
-              title={autoScroll ? "自動スクロールを停止" : "自動スクロールを開始"}
+              title={autoScroll ? "Stop auto scroll" : "Start auto scroll"}
             >
               {autoScroll ? (
                 <ArrowDown className="h-4 w-4 text-blue-500" />
@@ -427,12 +500,18 @@ export default function SerialMonitor() {
               )}
             </Button>
 
+            <Button onClick={toggleTheme} variant="outline" size="sm" title="Toggle theme">
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+
             <Badge
               variant={isConnected ? (demoMode ? "secondary" : "default") : "secondary"}
               className={isConnected && !demoMode ? "bg-green-500 text-white hover:bg-green-600" : ""}
             >
-              {isConnected ? (demoMode ? "デモ中" : "接続中") : "未接続"}
+              {isConnected ? (demoMode ? "Demo Mode" : "Connected") : "Disconnected"}
             </Badge>
+
+            {isCustomBaudRate && customBaudRate && <Badge variant="outline">Custom: {customBaudRate} bps</Badge>}
           </div>
         </CardContent>
       </Card>
@@ -441,15 +520,15 @@ export default function SerialMonitor() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>受信データ</CardTitle>
+              <CardTitle>Received Data</CardTitle>
             </div>
             <div className="flex gap-2">
               <Badge variant={autoScroll ? "default" : "secondary"}>
-                {autoScroll ? "自動スクロール: ON" : "自動スクロール: OFF"}
+                {autoScroll ? "Auto Scroll: ON" : "Auto Scroll: OFF"}
               </Badge>
               <Button onClick={clearData} variant="outline" size="sm" disabled={receivedData.length === 0}>
                 <Trash2 className="h-4 w-4 mr-2" />
-                クリア
+                Clear
               </Button>
             </div>
           </div>
@@ -462,10 +541,12 @@ export default function SerialMonitor() {
           >
             {receivedData.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                {isConnected ? "データを待機中..." : "シリアルポートに接続してください"}
+                {isConnected ? "Waiting for data..." : "Please connect to a serial port"}
               </div>
             ) : (
-              <div className="font-mono text-sm break-all whitespace-pre-wrap leading-relaxed">{receivedData}</div>
+              <div className="font-mono text-sm break-all whitespace-pre-wrap leading-relaxed text-green-500 dark:text-green-400">
+                {receivedData}
+              </div>
             )}
           </ScrollArea>
         </CardContent>

@@ -1,30 +1,42 @@
-# Serial port browser
+# Serial Port Monitor
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+A web-based serial port monitor built with Next.js and the Web Serial API. Features dark mode support and Japanese character handling.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/halka1s-projects/v0-serial-port-browser)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/wy7ke17WCdU)
+## Features
 
-## Overview
+- Connect to serial ports via Web Serial API
+- Real-time data monitoring with auto-scroll
+- Dark/Light mode toggle
+- Sound notifications for received data
+- Demo mode for testing
+- Support for Japanese and multi-byte characters
+- Customizable baud rates
+- Export functionality
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Browser Support
+
+- Chrome 89+
+- Edge 89+
+- Opera 75+
+
+## Requirements
+
+- HTTPS connection or localhost
+- Modern browser with Web Serial API support
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Run development server: `npm run dev`
+4. Open [http://localhost:3000](http://localhost:3000)
 
 ## Deployment
 
-Your project is live at:
+This project is configured for static export and can be deployed to:
+- Vercel
+- Netlify
+- Cloudflare Pages
+- GitHub Pages
 
-**[https://vercel.com/halka1s-projects/v0-serial-port-browser](https://vercel.com/halka1s-projects/v0-serial-port-browser)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.dev/chat/projects/wy7ke17WCdU](https://v0.dev/chat/projects/wy7ke17WCdU)**
-
-## How It Works
-
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+Run `npm run build` to create a production build.
