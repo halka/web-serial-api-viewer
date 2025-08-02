@@ -124,18 +124,21 @@ export default function SerialMonitor() {
     const interval = setInterval(
       () => {
         const sampleData = [
-          "Temperature: 23.5°C",
-          "Humidity: 65%",
-          "Pressure: 1013.25 hPa",
-          "Light: 450 lux",
-          "Motion detected",
-          "Battery: 85%",
-          "Signal strength: -45 dBm",
-          "GPS Data:\nLat: 35.6762\nLon: 139.6503\nAlt: 40m",
-          "Sensor Status:\n- Temperature: OK\n- Humidity: OK\n- Pressure: FAIL",
-          "Multi-line log:\nINFO: System started\nWARN: Low battery\nERROR: Sensor disconnected",
-          'JSON Data:\n{\n  "temp": 25.3,\n  "humidity": 60,\n  "status": "ok"\n}',
-          "Command Response:\n> status\nSystem: Running\nUptime: 1d 5h 23m\n> ",
+          "温度: 23.5°C",
+          "湿度: 65%",
+          "気圧: 1013.25 hPa",
+          "照度: 450 lux",
+          "動作検知",
+          "バッテリー: 85%",
+          "信号強度: -45 dBm",
+          "GPS データ:\n緯度: 35.6762\n経度: 139.6503\n高度: 40m",
+          "センサー状態:\n- 温度: 正常\n- 湿度: 正常\n- 気圧: エラー",
+          "マルチライン ログ:\n情報: システム開始\n警告: バッテリー低下\nエラー: センサー切断",
+          'JSON データ:\n{\n  "温度": 25.3,\n  "湿度": 60,\n  "状態": "正常"\n}',
+          "コマンド応答:\n> ステータス\nシステム: 動作中\n稼働時間: 1日 5時間 23分\n> ",
+          "日本語テスト: こんにちは世界！\n漢字、ひらがな、カタカナ、英数字123",
+          "マルチバイト文字テスト:\n🌡️ 温度センサー\n💧 湿度センサー\n🔋 バッテリー状態",
+          "エラーメッセージ:\nエラーコード: E001\n詳細: 通信タイムアウトが発生しました\n対処法: デバイスを再接続してください",
         ]
 
         const randomData = sampleData[Math.floor(Math.random() * sampleData.length)]
@@ -207,39 +210,84 @@ export default function SerialMonitor() {
     }
   }
 
-  // データ読み取りの開始
+  // データ読み取りの開始（日本語マルチバイト文字対応）
   const startReading = async (serialPort: SerialPort) => {
     const reader = serialPort.readable?.getReader()
     if (!reader) return
 
     readerRef.current = reader
-    const decoder = new TextDecoder()
+    // UTF-8デコーダーを明示的に指定（日本語対応）
+    const decoder = new TextDecoder("utf-8", {
+      fatal: false, // エラー時に例外を投げない
+      ignoreBOM: true, // BOMを無視
+    })
 
     try {
       while (true) {
         const { value, done } = await reader.read()
-        if (done) break
 
-        const text = decoder.decode(value, { stream: true })
+        // ストリームが終了した場合の処理
+        if (done) {
+          console.log("シリアルストリームが終了しました")
+          // 接続状態を更新
+          setIsConnected(false)
+          setPermissionError("シリアルポートとの接続が切断されました。")
+          break
+        }
 
-        // 受信したデータをそのまま表示（改行文字での分割なし）
-        if (text) {
-          const newData: ReceivedData = {
-            id: Date.now() + Math.random(),
-            data: text,
-            timestamp: new Date(),
+        // データが存在する場合のみ処理
+        if (value && value.length > 0) {
+          // stream: true で部分的なマルチバイト文字も適切に処理
+          const text = decoder.decode(value, { stream: true })
+
+          // 受信したデータをそのまま表示（日本語文字も含む）
+          if (text) {
+            const newData: ReceivedData = {
+              id: Date.now() + Math.random(),
+              data: text,
+              timestamp: new Date(),
+            }
+
+            // 新しいデータを配列の先頭に追加
+            setReceivedData((prev) => [newData, ...prev])
+            playReceiveSound()
           }
-
-          // 新しいデータを配列の先頭に追加
-          setReceivedData((prev) => [newData, ...prev])
-          playReceiveSound()
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("データ読み取りエラー:", error)
-      if (isConnected) {
-        setPermissionError("データ読み取り中にエラーが発生しました。")
+
+      // エラーの種類に応じた処理
+      if (error.name === "NetworkError") {
+        setPermissionError("ネットワークエラー: デバイスが切断された可能性があります。")
+      } else if (error.name === "InvalidStateError") {
+        setPermissionError("無効な状態: ポートが既に閉じられています。")
+      } else if (error.name === "TypeError" && error.message.includes("decode")) {
+        setPermissionError("文字エンコーディングエラー: 受信データの文字コードを確認してください。")
+      } else {
+        setPermissionError(`データ読み取り中にエラーが発生しました: ${error.message}`)
       }
+
+      // 接続状態を更新
+      setIsConnected(false)
+    } finally {
+      // 最後に残ったデータがあれば処理（マルチバイト文字の最終処理）
+      try {
+        const finalText = decoder.decode()
+        if (finalText) {
+          const newData: ReceivedData = {
+            id: Date.now() + Math.random(),
+            data: finalText,
+            timestamp: new Date(),
+          }
+          setReceivedData((prev) => [newData, ...prev])
+        }
+      } catch (finalError) {
+        console.log("最終デコードエラー:", finalError)
+      }
+
+      // リーダーをクリア
+      readerRef.current = null
     }
   }
 
@@ -271,11 +319,11 @@ export default function SerialMonitor() {
   // サウンドの切り替え
   const toggleSound = () => {
     const newSoundState = !soundEnabled
-    console.log("Toggling sound from", soundEnabled, "to", newSoundState)
+    console.log("サウンド切り替え:", soundEnabled, "→", newSoundState)
     setSoundEnabled(newSoundState)
   }
 
-  // 時刻フォーマット
+  // 時刻フォーマット（日本語ロケール）
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("ja-JP", {
       hour12: false,
@@ -286,7 +334,7 @@ export default function SerialMonitor() {
     })
   }
 
-  // 日付フォーマット
+  // 日付フォーマット（日本語ロケール）
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("ja-JP", {
       year: "numeric",
@@ -420,7 +468,9 @@ export default function SerialMonitor() {
                   <div key={item.id}>
                     <div className="flex items-start gap-3 p-2 rounded-md bg-muted/50">
                       <div className="flex-1 min-w-0">
-                        <div className="font-mono text-sm break-all whitespace-pre-wrap">{item.data}</div>
+                        <div className="font-mono text-sm break-all whitespace-pre-wrap leading-relaxed">
+                          {item.data}
+                        </div>
                         <div className="text-xs text-muted-foreground mt-1 space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">受信日時:</span>
