@@ -378,6 +378,9 @@ export default function SerialMonitor() {
                   <SelectItem value="38400">38400</SelectItem>
                   <SelectItem value="57600">57600</SelectItem>
                   <SelectItem value="115200">115200</SelectItem>
+                  <SelectItem value="230400">230400</SelectItem>
+                  <SelectItem value="460800">460800</SelectItem>
+                  <SelectItem value="921600">921600</SelectItem>
                 </SelectContent>
               </Select>
             </div>
