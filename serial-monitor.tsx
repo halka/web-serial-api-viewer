@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Trash2, Wifi, WifiOff, Volume2, AlertTriangle } from "lucide-react"
+import { Trash2, Wifi, WifiOff, Volume2, VolumeX, AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 interface ReceivedData {
@@ -29,6 +29,18 @@ export default function SerialMonitor() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const [demoMode, setDemoMode] = useState(false)
   const [demoInterval, setDemoInterval] = useState<NodeJS.Timeout | null>(null)
+
+  // soundEnabledの最新の値を参照するためのref
+  const soundEnabledRef = useRef(soundEnabled)
+
+  // soundEnabledが変更されるたびにrefを更新
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled
+  }, [soundEnabled])
+
+  const clearData = () => {
+    setReceivedData([])
+  }
 
   useEffect(() => {
     // Web Serial APIのサポートチェック
@@ -64,9 +76,18 @@ export default function SerialMonitor() {
     }
   }, [])
 
-  // 受信音を鳴らす関数
-  const playReceiveSound = async () => {
-    if (!soundEnabled || !audioContextRef.current) return
+  // 受信音を鳴らす関数 - useCallbackで最新の状態を参照
+  const playReceiveSound = useCallback(async () => {
+    // refから最新のsoundEnabled値を取得
+    if (!soundEnabledRef.current) {
+      console.log("Sound is disabled, skipping playback")
+      return
+    }
+
+    if (!audioContextRef.current) {
+      console.log("AudioContext not available")
+      return
+    }
 
     try {
       // AudioContextが suspended状態の場合は resume する
@@ -89,12 +110,14 @@ export default function SerialMonitor() {
 
       oscillator.start(ctx.currentTime)
       oscillator.stop(ctx.currentTime + 0.1)
+
+      console.log("Sound played successfully")
     } catch (error) {
       console.log("Sound playback failed:", error)
     }
-  }
+  }, [])
 
-  const startDemoMode = () => {
+  const startDemoMode = useCallback(() => {
     setDemoMode(true)
     setIsConnected(true)
 
@@ -130,16 +153,16 @@ export default function SerialMonitor() {
     ) // Random interval between 2-5 seconds
 
     setDemoInterval(interval)
-  }
+  }, [playReceiveSound])
 
-  const stopDemoMode = () => {
+  const stopDemoMode = useCallback(() => {
     setDemoMode(false)
     setIsConnected(false)
     if (demoInterval) {
       clearInterval(demoInterval)
       setDemoInterval(null)
     }
-  }
+  }, [demoInterval])
 
   // シリアルポートに接続
   const connectToSerial = async () => {
@@ -245,9 +268,11 @@ export default function SerialMonitor() {
     }
   }
 
-  // 受信データをクリア
-  const clearData = () => {
-    setReceivedData([])
+  // サウンドの切り替え
+  const toggleSound = () => {
+    const newSoundState = !soundEnabled
+    console.log("Toggling sound from", soundEnabled, "to", newSoundState)
+    setSoundEnabled(newSoundState)
   }
 
   // 時刻フォーマット
@@ -348,18 +373,30 @@ export default function SerialMonitor() {
               {demoMode ? "デモ停止" : "デモモード"}
             </Button>
 
-            <Button onClick={() => setSoundEnabled(!soundEnabled)} variant="outline" size="sm">
-              <Volume2 className={`h-4 w-4 ${soundEnabled ? "text-blue-500" : "text-gray-400"}`} />
+            <Button
+              onClick={toggleSound}
+              variant="outline"
+              size="sm"
+              title={soundEnabled ? "音をミュート" : "音を有効化"}
+            >
+              {soundEnabled ? (
+                <Volume2 className="h-4 w-4 text-blue-500" />
+              ) : (
+                <VolumeX className="h-4 w-4 text-gray-400" />
+              )}
             </Button>
 
-            <Badge variant={isConnected ? (demoMode ? "secondary" : "default") : "secondary"}>
+            <Badge
+              variant={isConnected ? (demoMode ? "secondary" : "default") : "secondary"}
+              className={isConnected && !demoMode ? "bg-green-500 text-white hover:bg-green-600" : ""}
+            >
               {isConnected ? (demoMode ? "デモ中" : "接続中") : "未接続"}
             </Badge>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="flex-1">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -372,7 +409,7 @@ export default function SerialMonitor() {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-96 w-full border rounded-md p-4">
+          <ScrollArea className="w-full border rounded-md p-4" style={{ height: "calc(100vh - 320px)" }}>
             {receivedData.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 {isConnected ? "データを待機中..." : "シリアルポートに接続してください"}
