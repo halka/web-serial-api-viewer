@@ -23,10 +23,10 @@ Requires HTTPS connection or localhost for Web Serial API access.
 
 ## Development
 
-\`\`\`bash
+```bash
 npm install
 npm run dev
-\`\`\`
+```
 
 ## Deployment
 
@@ -36,8 +36,8 @@ This project is configured for static export and can be deployed to:
 - GitHub Pages
 - Any static hosting service
 
-\`\`\`bash
+```bash
 npm run build
-\`\`\`
+```
 
 The built files will be in the `out` directory.
