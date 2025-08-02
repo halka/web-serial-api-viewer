@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -352,10 +352,7 @@ export default function SerialMonitor() {
               <Volume2 className={`h-4 w-4 ${soundEnabled ? "text-blue-500" : "text-gray-400"}`} />
             </Button>
 
-            <Badge
-              variant={isConnected ? (demoMode ? "secondary" : "default") : "secondary"}
-              className={isConnected && !demoMode ? "bg-green-500 text-white" : ""}
-            >
+            <Badge variant={isConnected ? (demoMode ? "secondary" : "default") : "secondary"}>
               {isConnected ? (demoMode ? "デモ中" : "接続中") : "未接続"}
             </Badge>
           </div>
@@ -375,7 +372,7 @@ export default function SerialMonitor() {
           </div>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="w-full border rounded-md p-4" style={{ height: "calc(100vh - 400px)" }}>
+          <ScrollArea className="h-96 w-full border rounded-md p-4">
             {receivedData.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 {isConnected ? "データを待機中..." : "シリアルポートに接続してください"}
