@@ -545,7 +545,7 @@ export default function SerialMonitor() {
                 {isConnected ? "Waiting for data..." : "Please connect to a serial port"}
               </div>
             ) : (
-              <div className="font-mono text-sm break-all whitespace-pre-wrap leading-relaxed text-green-500 dark:text-green-400">
+              <div className="font-mono text-sm break-all whitespace-pre-wrap leading-relaxed text-gray-500 dark:text-green-400">
                 {receivedData}
               </div>
             )}
