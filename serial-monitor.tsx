@@ -21,7 +21,7 @@ export default function SerialMonitor() {
   const [receivedData, setReceivedData] = useState<string>("")
   const [isSupported, setIsSupported] = useState(false)
   const [permissionError, setPermissionError] = useState<string | null>(null)
-  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [soundEnabled, setSoundEnabled] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [autoScroll, setAutoScroll] = useState(true)
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null)
