@@ -410,7 +410,7 @@ export default function SerialMonitor() {
               </Label>
               {!isCustomBaudRate ? (
                 <Select value={baudRate} onValueChange={handleBaudRateChange} disabled={isConnected}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-32" aria-label="Select Baud Rate">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
